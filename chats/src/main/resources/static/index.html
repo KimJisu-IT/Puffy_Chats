@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Chat</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #chat-container {
+            width: 400px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        #chat-header {
+            background: #007bff;
+            color: #fff;
+            padding: 15px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        #chat-messages {
+            padding: 10px;
+            height: 300px;
+            overflow-y: scroll;
+            border-bottom: 1px solid #ddd;
+        }
+
+        #chat-input {
+            display: flex;
+            padding: 10px;
+        }
+
+        #chat-input input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+
+        #chat-input button {
+            padding: 10px 15px;
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #chat-input button:hover {
+            background: #0056b3;
+        }
+
+        .chat-message {
+            margin-bottom: 10px;
+        }
+
+        .chat-message .message-sender {
+            font-weight: bold;
+        }
+
+        .chat-message .message-text {
+            margin-left: 5px;
+        }
+
+        .message-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message-container .message {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 5px;
+            word-wrap: break-word;
+        }
+
+        .message-container .message.sent {
+            align-self: flex-end;
+            background: #007bff;
+            color: #fff;
+        }
+
+        .message-container .message.received {
+            align-self: flex-start;
+            background: #f1f0f0;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+<div id="chat-container">
+    <div id="chat-header">
+        WebSocket Chat
+    </div>
+    <div id="chat-messages" class="message-container"></div>
+    <div id="chat-input">
+        <input type="text" id="username" placeholder="Enter your name" style="flex: 0 0 auto; width: 30%; margin-right: 10px;"/>
+        <input type="text" id="message" placeholder="Enter your message" style="flex: 1;"/>
+        <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+    </div>
+</div>
+
+<script>
+        var socket = null;
+
+        function connect() {
+            socket = new WebSocket('ws://localhost:8080/chat');
+            socket.onmessage = function (event) {
+                var message = JSON.parse(event.data);
+                showMessage(message);
+            };
+        }
+
+        function disconnect() {
+            if (socket !== null) {
+                socket.close();
+            }
+            console.log("Disconnected");
+        }
+
+        function sendMessage() {
+            var from = document.getElementById('username').value;
+            var text = document.getElementById('message').value;
+            if (from && text) {
+                var message = {
+                    from: from,
+                    text: text
+                };
+                socket.send(JSON.stringify(message));
+                showMessage(message, 'sent');
+                document.getElementById('message').value = '';
+            }
+        }
+
+        function showMessage(message, type = 'received') {
+            var messageContainer = document.getElementById('chat-messages');
+            var messageElement = document.createElement('div');
+            messageElement.classList.add('message', type);
+
+            var senderElement = document.createElement('span');
+            senderElement.classList.add('message-sender');
+            senderElement.textContent = message.from + ": ";
+
+            var textElement = document.createElement('span');
+            textElement.classList.add('message-text');
+            textElement.textContent = message.text;
+
+            messageElement.appendChild(senderElement);
+            messageElement.appendChild(textElement);
+
+            messageContainer.appendChild(messageElement);
+            messageContainer.scrollTop = messageContainer.scrollHeight;
+        }
+
+        // Connect to the WebSocket server on page load
+        window.onload = function() {
+            connect();
+        };
+    </script>
+</body>
+</html>
